@@ -5,13 +5,22 @@ if [ "$?" != "0" ]; then
     echo "git is not installed..."
     exit 1
 fi
+find_current_user() {
+  echo "$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
+}
 
-find_git_host() {
-  ALL_HOST=$(cat ~/.ssh/config| grep 'Host ' | awk '{print $2}')
+print_user_list() {
+  local hosts=$(cat ~/.ssh/config| grep 'Host ' | awk '{print $2}')
 
-  for host in $ALL_HOST; do 
+  for host in $hosts; do 
     if [[ "$(ssh -G $host | grep user | awk '{print $2}' | head -n 1)" = "git" ]]; then
-      HOSTS="$host $HOSTS"
+      printf "$host"
+      
+      if [[ "$host" = "$CURRENT_USER" ]]; then
+        printf "[*]\n"
+      else
+        printf "[ ]\n"
+      fi;
     fi; 	
   done
 
@@ -81,5 +90,6 @@ Host $name
 EOF
 }
 
-find_git_host
-create_info
+CURRENT_USER=$(find_current_user)
+print_user_list
+#create_info
