@@ -1,12 +1,12 @@
 #!/bin/bash
 
-which git &> /dev/null
-if [ "$?" != "0" ]; then
-    echo "git is not installed..."
-    exit 1
-fi
 find_current_user() {
-  echo "$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
+  local user="$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
+  
+  if [[ "$user" = "github.com" ]]; then
+    echo "!info: current globar user"
+  fi
+  echo "$user"
 }
 
 print_user_list() {
@@ -72,9 +72,10 @@ required_input(){
   
   echo "$value"
 }
+
 write_ssh_config() {
-  email="$1"
-  name="$2"
+  local email="$1"
+  local name="$2"
   identityFile=~"/.ssh/id_rsa_gitzua_$name"
 
   cat >> ~/.ssh/config <<EOF
@@ -90,6 +91,30 @@ Host $name
 EOF
 }
 
+change_user() {
+  local changeUser="$1"
+  local currentRepository=$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 2)
+  git remote set-url origin git@$changeUser:$currentRepository
+  CURRENT_USER=$(find_current_user)
+}
+
+################################
+############ GITZUA ############
+################################
+
+which git &> /dev/null
+if [ "$?" != "0" ]; then
+    echo "git is not installed..."
+    exit 1
+fi
+
 CURRENT_USER=$(find_current_user)
+
+if [[ -z "$CURRENT_USER" ]]; then
+    exit 1;
+fi
+
+print_user_list
+change_user $1
 print_user_list
 #create_info
