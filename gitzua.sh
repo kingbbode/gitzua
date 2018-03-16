@@ -1,12 +1,28 @@
 #!/bin/bash
 
-find_current_user() {
-  local user="$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
-  
-  if [[ "$user" = "github.com" ]]; then
-    user="globar"
+setting_current_user() {
+  CURRENT_USER="$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
+  if [[ "$CURRENT_USER" = "github.com" ]]; then
+    CURRENT_USER="global"
   fi
-  echo "$user"
+}
+
+check_valid_user() {
+  local input=$1
+  local hosts=$(cat ~/.ssh/config| grep 'Host ' | awk '{print $2}')
+  local result=1
+  for host in $hosts; do
+    if [[ "$(ssh -G $host | grep user | awk '{print $2}' | head -n 1)" = "git" ]]; then
+      if [ "$host" = "$input" ] || [ "global" = "$input" ]; then
+        result=0
+      fi;
+    fi;
+  done
+  
+  if [[ $result = 1 ]]; then
+    echo "could't find user : '$input'"
+    exit 1
+  fi
 }
 
 print_user_list() {
@@ -80,12 +96,19 @@ EOF
 
 change_user() {
   local changeUser="$1"
-  local changeUserEmail=$(cat ~/.ssh/config | grep gitzua-$1-email | awk '{printf $2}')
+  local changeUserEmail=""
+  if [[ "$changeUser" = "global" ]]; then
+    changeUser="github.com"
+    git config --local --unset user.name
+    git config --local --unset user.email
+  else
+    changeUserEmail=$(cat ~/.ssh/config | grep gitzua-$1-email | awk '{printf $2}')
+    git config --local user.name $changeUser
+    git config --local user.email $changeUserEmail
+  fi
   local currentRepository=$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 2)
   git remote set-url origin git@$changeUser:$currentRepository
-  git config --local user.name $changeUser
-  git config --local user.email $changeUserEmail
-  CURRENT_USER=$(find_current_user)
+  setting_current_user
 }
 
 check_use_git() {
@@ -98,7 +121,7 @@ check_use_git() {
 }
 
 check_git_url_support() {
-  if [[ $1 != git@* ]]; then
+  if [[ $(git remote -v | head -n 1 | awk '{print $2}') != git@* ]]; then
     echo "not supported path. supported only ssh type."
     exit 1;
   fi
@@ -114,21 +137,38 @@ if [ "$?" != "0" ]; then
     exit 1
 fi
 
-check_use_git
+case $1 in
+  create)
+    create_info
+    ;;
+  list)
+    check_use_git
+    setting_current_user
+    print_user_list
+    ;;
+  use)
+    check_use_git
+    check_git_url_support
+    setting_current_user
+    if [[ "$2" != "" ]]; then
+      check_valid_user $2
+      change_user $2
+      print_user_list
+    else
+      echo "usage : gitzua use [user]"
+      exit 1
+    fi
+    ;;
+  *)
+    echo """
+**********************************************************
+********************** GITZUA HELP ***********************
+**********************************************************
+  create -- record user info & ssh key
+  list -- print current user on git workspace.
+  use [user name]-- change current user on git workspace.
+----------------------------------------------------------
+"""
+    ;;
+esac
 
-check_git_url_support $(git remote -v | head -n 1 | awk '{print $2}')
-
-#if [[ -n "$(git remote -v | grep https)" ]]; then
-#  echo "not supported https version. please, change ssh version."
-#  exit 1;
-#fi
-
-CURRENT_USER=$(find_current_user)
-
-if [[ -z "$CURRENT_USER" ]]; then
-    exit 1;
-fi
-
-print_user_list
-#change_user $1
-#create_info
