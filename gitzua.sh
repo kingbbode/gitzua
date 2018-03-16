@@ -1,4 +1,15 @@
 #!/bin/bash
+# Git User Manager
+# https://github.com/kingbbode/gitzua
+#
+# Implemented by Kingbbode (kingbbode@gmail.com)
+#
+# If you have a problem, please report it in the github issue.
+# https://github.com/kingbbode/gitzua/issues
+#
+# Developed to help developers who use more than one github account.
+# 
+# GIT GAZUA~~!
 
 setting_current_user() {
   CURRENT_USER="$(git remote -v | head -1 | awk '{print $2}' | tr -s ':' | cut -d ':' -f 1 | tr -s '@' | cut -d '@' -f 2)"
