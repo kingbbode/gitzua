@@ -122,6 +122,14 @@ change_user() {
   setting_current_user
 }
 
+clone_git() {
+  local user="$1"
+  local repo="$2"
+  local currentRepository=$(echo "$2" | tr -s ':' | cut -d ':' -f 2)
+  echo "git@$suer:$currentRepository"
+  git clone git@$user:$currentRepository
+}
+
 check_use_git() {
   if [[ -d .git ]]; then
     printf ""
@@ -161,7 +169,7 @@ case $1 in
     check_use_git
     check_git_url_support
     setting_current_user
-    if [[ "$2" != "" ]]; then
+    if [[ "" != "$2" ]]; then
       check_valid_user $2
       change_user $2
       print_user_list
@@ -170,14 +178,25 @@ case $1 in
       exit 1
     fi
     ;;
+  clone)
+    if [ "" != "$2" ] && [ "" != "$3" ]; then 
+      check_valid_user $2
+      clone_git $2 $3
+    else
+      echo "usage : gitzua clone [user] [git_url]"
+      exit 1
+    fi
+    ;;
   *)
     echo """
+    ;;
 **********************************************************
 ********************** GITZUA HELP ***********************
 **********************************************************
   create -- record user info & ssh key
   list -- print current user on git workspace.
   use [user name]-- change current user on git workspace.
+  clone [user name] [git_url]
 ----------------------------------------------------------
 """
     ;;
