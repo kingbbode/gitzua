@@ -64,6 +64,13 @@ gitzua use [user name]
 
 ![create](/images/use-a.png)
 
+#### clone
+
+```$xslt
+gitzua clone [user name] [git url]
+```
+![clone](/images/clone.png)
+
 ---
 
 ## Intellij
