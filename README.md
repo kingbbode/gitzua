@@ -1,4 +1,4 @@
-# Git User Manager, GITZUA!!
+# Git User Manager, GITZUA!!!
 
 **Git 사용자를 관리하기 위한 Command Line Interface 를 제공**
 
